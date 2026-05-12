@@ -58,11 +58,9 @@ async function main() {
   }, config.SNAPSHOT_INTERVAL_MS);
 
   if (config.RESET_INTERVAL_MS > 0) {
-    log(`reset job enabled: every ${config.RESET_INTERVAL_MS}ms`);
+    log(`reset job enabled: every ${config.RESET_INTERVAL_MS}ms (db only; faults survive)`);
     setInterval(() => {
-      runReset({ simulatorUrl: config.SIMULATOR_URL, log }).catch((e) =>
-        log('resetJob error', e.message),
-      );
+      runReset({ log }).catch((e) => log('resetJob error', e.message));
     }, config.RESET_INTERVAL_MS);
   } else {
     log('reset job disabled (RESET_INTERVAL_MS=0)');

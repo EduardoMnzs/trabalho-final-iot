@@ -1,14 +1,19 @@
 const { Op } = require('sequelize');
-const { getModels, time } = require('@parking/shared');
+const { getModels } = require('@parking/shared');
 const config = require('../config');
 
-async function checkFlapping({ spotId, sectorId }) {
+// Usa o ts do próprio evento como âncora de tempo simulado.
+// Evita drift entre relógios simulados de containers diferentes.
+async function checkFlapping({ spotId, sectorId, eventTs }) {
   const { SpotEvent, Incident } = getModels();
-  const now = time.nowSim();
+  const now = new Date(eventTs);
   const windowStart = new Date(now.getTime() - config.FLAPPING_WINDOW_SEC * 1000);
 
   const count = await SpotEvent.count({
-    where: { spotId, ts: { [Op.gt]: windowStart } },
+    where: {
+      spotId,
+      ts: { [Op.gt]: windowStart, [Op.lte]: now },
+    },
   });
 
   const open = await Incident.findOne({

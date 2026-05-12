@@ -1,14 +1,27 @@
-const { getModels, time } = require('@parking/shared');
+const { getModels } = require('@parking/shared');
+const { QueryTypes } = require('sequelize');
 const config = require('../config');
 
+// "Agora" = MAX(ts) de spot_events. Evita drift entre relógios simulados
+// de containers; usa o tempo do dado real como referência.
+async function getDataNow(sequelize) {
+  const [row] = await sequelize.query(`SELECT MAX(ts) AS max_ts FROM spot_events`, {
+    type: QueryTypes.SELECT,
+  });
+  if (row && row.max_ts) return new Date(row.max_ts);
+  return null;
+}
+
 async function scanStuck() {
-  const { Spot, Incident } = getModels();
-  const now = time.nowSim();
+  const { sequelize, Spot, Incident } = getModels();
+  const now = await getDataNow(sequelize);
+  if (!now) return; // sem eventos ainda, nada a varrer
   const spots = await Spot.findAll();
 
   for (const spot of spots) {
-    const idleMs = now.getTime() - new Date(spot.lastChangeTs).getTime();
-    const idleSec = idleMs / 1000;
+    const idleSec = (now.getTime() - new Date(spot.lastChangeTs).getTime()) / 1000;
+    if (idleSec < 0) continue; // spot mais novo que o pivô (raro: snapshot inconsistente)
+
     const threshold =
       spot.currentState === 'OCCUPIED'
         ? config.STUCK_OCCUPIED_THRESHOLD_SEC
@@ -47,7 +60,6 @@ async function scanStuck() {
       await open.update({ status: 'CLOSED', tsClose: now });
     }
 
-    // Também fecha incidentes do tipo "oposto" automaticamente quando o spot voltou a alternar.
     const oppositeType = type === 'STUCK_OCCUPIED' ? 'STUCK_FREE' : 'STUCK_OCCUPIED';
     const oppositeOpen = await Incident.findOne({
       where: { spotId: spot.spotId, type: oppositeType, status: 'OPEN' },

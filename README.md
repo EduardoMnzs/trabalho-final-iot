@@ -141,9 +141,10 @@ Com isso o ingestor, a cada 5 min:
 
 1. `TRUNCATE` em `spot_events`, `sector_snapshots`, `incidents`, `recommendations_log`, `spots`
 2. Re-cria as 90 vagas no estado `FREE`
-3. Chama `POST /reset` no simulador (zera estado em memória + fault modes)
 
-Também é possível **forçar reset on-demand**:
+> ⚠️ O reset **periódico** preserva as injeções de falha do simulador (`flapping`, `stuck_*`, `fill`) — elas só são desfeitas com `mode=normal` ou pelo reset manual completo abaixo. Isso é proposital: você injeta a falha, demonstra o incidente sendo detectado várias vezes ao longo dos ciclos.
+
+Também é possível **forçar reset completo on-demand** (limpa banco **e** zera estado do simulador):
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/admin/reset

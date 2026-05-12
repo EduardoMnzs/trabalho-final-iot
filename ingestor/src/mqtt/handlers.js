@@ -59,7 +59,11 @@ function makeHandler({ mqttClient, log }) {
       const { wasNew } = await persistEvent(payload);
       if (!wasNew) return;
 
-      await checkFlapping({ spotId: payload.spotId, sectorId: payload.sectorId });
+      await checkFlapping({
+        spotId: payload.spotId,
+        sectorId: payload.sectorId,
+        eventTs: payload.ts,
+      });
       maybeTrigger(payload.sectorId, mqttClient).catch((e) =>
         log('recommender error', e.message),
       );
