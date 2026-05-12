@@ -23,4 +23,8 @@ module.exports = {
   RECOMMENDATION_COOLDOWN_SEC: intEnv("RECOMMENDATION_COOLDOWN_SEC", 300),
 
   RUN_MIGRATIONS: (process.env.RUN_MIGRATIONS || "true") === "true",
+
+  // Reset periódico (0 = desligado). Ex.: 300000 = a cada 5 minutos reais.
+  RESET_INTERVAL_MS: intEnv("RESET_INTERVAL_MS", 0),
+  SIMULATOR_URL: process.env.SIMULATOR_URL || "http://simulator:9000",
 };

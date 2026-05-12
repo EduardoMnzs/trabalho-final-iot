@@ -4,6 +4,7 @@ const config = require('./config');
 const { makeHandler } = require('./mqtt/handlers');
 const { scanStuck } = require('./services/stuckScanner');
 const { takeSnapshot } = require('./services/snapshotJob');
+const { runReset } = require('./services/resetJob');
 
 function log(...args) {
   console.log('[ingestor]', ...args);
@@ -55,6 +56,17 @@ async function main() {
   setInterval(() => {
     takeSnapshot().catch((e) => log('snapshotJob error', e.message));
   }, config.SNAPSHOT_INTERVAL_MS);
+
+  if (config.RESET_INTERVAL_MS > 0) {
+    log(`reset job enabled: every ${config.RESET_INTERVAL_MS}ms`);
+    setInterval(() => {
+      runReset({ simulatorUrl: config.SIMULATOR_URL, log }).catch((e) =>
+        log('resetJob error', e.message),
+      );
+    }, config.RESET_INTERVAL_MS);
+  } else {
+    log('reset job disabled (RESET_INTERVAL_MS=0)');
+  }
 
   process.on('SIGINT', () => {
     log('shutting down');

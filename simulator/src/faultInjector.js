@@ -31,6 +31,17 @@ function startInjector({ port, spotsById }) {
         return res.end(JSON.stringify(out));
       }
 
+      if (req.method === 'POST' && req.url === '/reset') {
+        for (const s of spotsById.values()) {
+          s.state = 'FREE';
+          s.fault = 'normal';
+          s.forceFill = false;
+          s.nextChangeSimMs = null;
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, resetSpots: spotsById.size }));
+      }
+
       if (req.method === 'POST' && req.url === '/inject') {
         const body = await readJsonBody(req);
         const { spotId, sectorId, mode } = body || {};

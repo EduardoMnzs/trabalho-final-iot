@@ -105,6 +105,7 @@ Aguarde alguns segundos até o ingestor terminar as migrations. Em seguida:
 | GET | `/api/v1/reports/turnover?sectorId=&from=&to=` | transições FREE→OCCUPIED |
 | GET | `/api/v1/incidents?status=open\|closed\|all&sectorId=` | incidentes |
 | GET | `/api/v1/recommendation?fromSector=` | recomenda outro setor se ≥ 90% |
+| POST | `/api/v1/admin/reset` | limpa o banco e zera o simulador (demo) |
 
 ## Tabelas (Postgres)
 
@@ -122,6 +123,34 @@ Veja `.env.example`. Principais:
 - `FLAPPING_WINDOW_SEC` / `FLAPPING_MAX_TRANSITIONS` — sensibilidade do detector de flapping.
 - `STUCK_OCCUPIED_THRESHOLD_SEC` / `STUCK_FREE_THRESHOLD_SEC` — tempo simulado sem transição.
 - `RECOMMENDATION_THRESHOLD` (default 0.90) — taxa para acionar recomendação.
+- `RESET_INTERVAL_MS` (default 0) — se > 0, o ingestor zera todos os dados a cada N ms.
+
+## Modo demo rápido / reset periódico
+
+Para apresentações curtas onde você quer ver picos, lotação e incidentes acontecerem em segundos:
+
+```bash
+# .env
+TIME_SCALE=600            # 1s real = 10min simulados → dia inteiro em 2,4 min reais
+STUCK_SCAN_INTERVAL_MS=15000
+RECOMMENDATION_COOLDOWN_SEC=60
+RESET_INTERVAL_MS=300000  # limpa tudo a cada 5 minutos reais
+```
+
+Com isso o ingestor, a cada 5 min:
+
+1. `TRUNCATE` em `spot_events`, `sector_snapshots`, `incidents`, `recommendations_log`, `spots`
+2. Re-cria as 90 vagas no estado `FREE`
+3. Chama `POST /reset` no simulador (zera estado em memória + fault modes)
+
+Também é possível **forçar reset on-demand**:
+
+```bash
+curl -X POST http://localhost:3000/api/v1/admin/reset
+# → { "ok": true, "dbReset": true, "simulatorReset": true }
+```
+
+Mude `TIME_SCALE` no `.env` e reinicie com `docker compose up -d --force-recreate` (ou `docker compose down && docker compose up -d`).
 
 ## Injeção de falhas (HTTP `:9000`)
 
