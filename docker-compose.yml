@@ -1,0 +1,111 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: parking-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    networks: [parking]
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: parking-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: parking
+      POSTGRES_PASSWORD: parking
+      POSTGRES_DB: parking
+    ports:
+      - "5432:5432"
+    volumes:
+      - parking-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U parking -d parking"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    networks: [parking]
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: parking-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_URL: postgres://parking:parking@postgres:5432/parking
+      MQTT_URL: mqtt://mosquitto:1883
+      LOG_LEVEL: info
+      TIME_SCALE: ${TIME_SCALE:-60}
+      RECOMMENDATION_THRESHOLD: ${RECOMMENDATION_THRESHOLD:-0.90}
+      RECOMMENDATION_COOLDOWN_SEC: ${RECOMMENDATION_COOLDOWN_SEC:-300}
+    ports:
+      - "3000:3000"
+    networks: [parking]
+
+  ingestor:
+    build:
+      context: .
+      dockerfile: ingestor/Dockerfile
+    container_name: parking-ingestor
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      DB_URL: postgres://parking:parking@postgres:5432/parking
+      MQTT_URL: mqtt://mosquitto:1883
+      LOG_LEVEL: info
+      TIME_SCALE: ${TIME_SCALE:-60}
+      FLAPPING_WINDOW_SEC: ${FLAPPING_WINDOW_SEC:-120}
+      FLAPPING_MAX_TRANSITIONS: ${FLAPPING_MAX_TRANSITIONS:-6}
+      FLAPPING_COOLDOWN_SEC: ${FLAPPING_COOLDOWN_SEC:-60}
+      STUCK_OCCUPIED_THRESHOLD_SEC: ${STUCK_OCCUPIED_THRESHOLD_SEC:-28800}
+      STUCK_FREE_THRESHOLD_SEC: ${STUCK_FREE_THRESHOLD_SEC:-86400}
+      STUCK_SCAN_INTERVAL_MS: ${STUCK_SCAN_INTERVAL_MS:-30000}
+      SNAPSHOT_INTERVAL_MS: ${SNAPSHOT_INTERVAL_MS:-10000}
+      RECOMMENDATION_THRESHOLD: ${RECOMMENDATION_THRESHOLD:-0.90}
+      RECOMMENDATION_COOLDOWN_SEC: ${RECOMMENDATION_COOLDOWN_SEC:-300}
+      RUN_MIGRATIONS: "true"
+    networks: [parking]
+
+  simulator:
+    build:
+      context: .
+      dockerfile: simulator/Dockerfile
+    container_name: parking-simulator
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_started
+      ingestor:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      MQTT_URL: mqtt://mosquitto:1883
+      LOG_LEVEL: info
+      TIME_SCALE: ${TIME_SCALE:-60}
+      SIM_SEED: ${SIM_SEED:-42}
+      INJECT_PORT: 9000
+    ports:
+      - "9000:9000"
+    networks: [parking]
+
+networks:
+  parking:
+    driver: bridge
+
+volumes:
+  parking-pgdata:

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estacionamento Inteligente - Campus</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Estacionamento Inteligente · Campus</h1>
+    <div id="ts" class="muted"></div>
+  </header>
+
+  <section id="summary" class="sectors-summary"></section>
+
+  <section id="grid" class="sectors-grid"></section>
+
+  <section class="panels">
+    <div class="panel">
+      <h2>Incidentes (OPEN)</h2>
+      <div id="incidents">carregando…</div>
+    </div>
+    <div class="panel">
+      <h2>Recomendações</h2>
+      <div class="rec-controls">
+        <button data-sector="A">Consultar A</button>
+        <button data-sector="B">Consultar B</button>
+        <button data-sector="C">Consultar C</button>
+      </div>
+      <div id="recommendation" class="muted">—</div>
+    </div>
+  </section>
+
+  <footer class="muted">
+    polling a cada 2s · endpoints em <code>/api/v1/*</code>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+# Dependências
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Variáveis de ambiente (use .env.example como template)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Memory / metadados de assistentes
+memory/
+.claude/
