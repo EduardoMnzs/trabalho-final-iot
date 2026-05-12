@@ -18,7 +18,9 @@ services:
       POSTGRES_PASSWORD: parking
       POSTGRES_DB: parking
     ports:
-      - "5432:5432"
+      # 5433 no host evita conflito com Postgres nativo (Windows/Linux) que use 5432.
+      # Conexao interna (api/ingestor → postgres) continua na 5432.
+      - "5433:5432"
     volumes:
       - parking-pgdata:/var/lib/postgresql/data
     healthcheck:

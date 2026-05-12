@@ -20,7 +20,9 @@ Backend em **Node.js + Express + Sequelize + Postgres**, arquitetura **MVC**, qu
 ## Pré-requisitos
 
 - Docker Desktop 24+ (com Docker Compose v2)
-- Portas livres no host: **1883** (MQTT), **3000** (API), **5432** (Postgres), **9000** (injetor)
+- Portas livres no host: **1883** (MQTT), **3000** (API), **5433** (Postgres), **9000** (injetor)
+
+> Postgres é exposto em **5433** no host (não 5432) para não conflitar com instalações nativas do Postgres. Os serviços internos (api/ingestor) seguem usando 5432 dentro da rede do Docker. Se for conectar com DBeaver/pgAdmin a partir do host, use `localhost:5433`.
 
 ## Como rodar
 
